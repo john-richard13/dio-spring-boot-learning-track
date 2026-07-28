@@ -1,30 +1,38 @@
-HELP.md
-.gradle
+# Compiled class files
+*.class
+
+# Gradle
+.gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+# Maven (caso alguém use no mesmo projeto)
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
 
+# IDEs
 ### IntelliJ IDEA ###
-.idea
+.idea/
 *.iws
 *.iml
 *.ipr
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+
+### VS Code ###
+.vscode/
+
+### Eclipse / STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
 
 ### NetBeans ###
 /nbproject/private/
@@ -33,5 +41,60 @@ out/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
-.vscode/
+# Ambiente e variáveis sensíveis
+.env
+*.env
+.env.local
+.env.*.local
+application-local.properties
+application-local.yml
+application-dev.properties
+application-dev.yml
+
+# Logs
+*.log
+logs/
+
+# Sistema operacional
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+
+### Windows ###
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+
+# Arquivos de áudio gerados durante os testes
+*.mp3
+*.m4a
+*.wav
+*.ogg
+
+# Docker volumes e dados locais
+mysql-data/
+postgres-data/
+data/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Relatórios de teste e cobertura
+htmlReport/
+xmlReport/
+jacoco/
+.coverage
+
+# Outros
+*.jar
+*.war
+*.ear
+node_modules/
