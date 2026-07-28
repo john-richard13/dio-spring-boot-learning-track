@@ -1,13 +1,15 @@
 package dio.budgeting.infrastructure.persistence.repository;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import org.springframework.stereotype.Repository;
+
 import dio.budgeting.domain.Category;
 import dio.budgeting.domain.Transaction;
 import dio.budgeting.domain.TransactionRepository;
 import dio.budgeting.infrastructure.persistence.entity.TransactionEntity;
-import org.springframework.stereotype.Repository;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Repository
 public class JpaTransactionRepository implements TransactionRepository {
@@ -20,34 +22,29 @@ public class JpaTransactionRepository implements TransactionRepository {
 
     @Override
     public Transaction save(Transaction transaction) {
-        var entity = TransactionEntity.from(transaction);
-        return transactionEntityRepository.save(entity).toDomain();
+        TransactionEntity entity = TransactionEntity.from(transaction);
+        TransactionEntity savedEntity = transactionEntityRepository.save(entity);
+
+        return savedEntity.toDomain();
     }
 
     @Override
     public List<Transaction> findAllByCategory(Category category) {
-        return transactionEntityRepository.findAllByCategory(category)
-                .stream()
-                .map(TransactionEntity::toDomain)
-                .toList();
+        List<Transaction> transactions = new ArrayList<>();
+
+        for (TransactionEntity entity : transactionEntityRepository.findAllByCategory(category)) {
+            transactions.add(Objects.requireNonNull(entity).toDomain());
+        }
+
+        return transactions;
     }
 
-    /**
-     * Retorna todas as transações persistidas.
-     *
-     * <p><strong>Nota didática:</strong> a conversão de entidades para domínio
-     * é feita com um {@code for} explícito e uma {@code ArrayList} ao invés de
-     * {@code Stream#map(...).toList()}. Essa escolha é proposital — o objetivo
-     * é manter o código o mais linear possível para quem está acompanhando o
-     * raciocínio passo a passo, sem abstrações intermediárias do Stream API.
-     * Em código de produção, a abordagem com streams seria perfeitamente válida.
-     */
     @Override
     public List<Transaction> findAll() {
         List<Transaction> transactions = new ArrayList<>();
 
         for (TransactionEntity entity : transactionEntityRepository.findAll()) {
-            transactions.add(entity.toDomain());
+            transactions.add(Objects.requireNonNull(entity).toDomain());
         }
 
         return transactions;
