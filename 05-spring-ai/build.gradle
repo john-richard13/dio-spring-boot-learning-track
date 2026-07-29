@@ -34,6 +34,9 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
+        // Banco de dados (escolha um):
+    runtimeOnly 'com.h2database:h2'           // ← H2 (banco em memória)
+    // runtimeOnly 'com.mysql:mysql-connector-j' // ← MySQL (descomente se quiser)
 }
 
 tasks.named('test') {
