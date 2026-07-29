@@ -1,149 +1,368 @@
-Desafio de Projeto — Spring AI (Budgeting API)
+<div align="center">
 
-# Projeto final do módulo 05-spring-ai da trilha dio-spring-boot-learning-track, evoluído com uma melhoria simples: consulta de resumo financeiro.
+# 💰 Budgeting API
+### Controle de Gastos Inteligente com Spring Boot + IA
 
-O que o projeto faz?
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen?logo=spring)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk)](https://openjdk.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-9.6-blue?logo=mysql)](https://www.mysql.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai)](https://openai.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-É uma API de orçamento pessoal que processa comandos de voz para registrar e consultar transações financeiras. O fluxo principal:
+<p>
+  <strong>API REST para registro e consulta de transações financeiras,</strong><br>
+  com processamento de áudio via Inteligência Artificial (Whisper + GPT-4o-mini).
+</p>
 
-    A pessoa envia um áudio (ex.: "gastei 50 reais no mercado").
-    O áudio é transcrito em texto (TranscriptionModel, Whisper).
-    Um ChatClient interpreta a intenção e decide qual ferramenta (@Tool) chamar.
-    A ferramenta executa um caso de uso real da aplicação (registrar ou consultar transações).
-    A resposta final é convertida de volta em áudio (TextToSpeechModel) e devolvida à pessoa.
+[🚀 Como Executar](#-como-executar) • [📡 Endpoints](#-endpoints) • [🧪 Testes](#-testes) • [📚 Aprendizados](#-o-que-aprendi)
 
-A arquitetura segue os mesmos princípios de DDD/Clean Architecture usados no restante da trilha: domain (regras e contratos), application (casos de uso, reutilizados tanto pelo REST quanto pela IA) e infrastructure (HTTP, JPA e integração com os modelos de IA).
+</div>
 
-Melhoria implementada: resumo financeiro
+---
 
-Ideia escolhida da lista: "Adicionar novos tipos de consulta financeira".
+## 📖 Índice
 
-Antes, a API só permitia listar transações por categoria. Foi adicionado um novo caso de uso, GetFinancialSummaryUseCase, que calcula:
+- [O que o projeto faz](#-o-que-o-projeto-faz)
+- [Tecnologias utilizadas](#-tecnologias-utilizadas)
+- [Arquitetura](#-arquitetura)
+- [Como executar](#-como-executar)
+- [Endpoints da API](#-endpoints-da-api)
+- [Como testar o fluxo principal](#-como-testar-o-fluxo-principal)
+- [Melhorias implementadas](#-melhorias-implementadas)
+- [O que aprendi](#-o-que-aprendi)
+- [Estrutura de pastas](#-estrutura-de-pastas)
 
-    o valor total já gasto;
-    o total gasto em cada categoria (GROCERIES, PHARMA, AUTO).
+---
 
-Essa consulta foi exposta de duas formas, reaproveitando o mesmo caso de uso (mesmo princípio já usado no projeto para PersistTransactionUseCase e ListTransactionsByCategoryUseCase):
+## ✨ O que o projeto faz
 
-    Endpoint REST: GET /transactions/summary
-    Ferramenta de IA (@Tool): registrada no ChatClient, para que a pessoa possa perguntar por voz, por exemplo, "quanto eu já gastei esse mês?" ou "me dá um resumo dos meus gastos".
+A **Budgeting API** é uma aplicação backend que permite:
 
-O prompt do sistema (system-message.st) foi ajustado com uma instrução curta para o modelo saber quando chamar essa nova ferramenta.
+| Funcionalidade | Descrição |
+|----------------|-----------|
+| 📝 **Cadastrar gastos** | Registrar transações financeiras com descrição, valor e categoria. |
+| 🔍 **Consultar por categoria** | Listar todos os gastos de uma categoria específica (`GROCERIES`, `PHARMA`, `AUTO`). |
+| 🎙️ **Processar áudio** | Enviar um áudio descrevendo um gasto (ex: *"Gastei 50 reais na farmácia"*) e a IA extrai automaticamente os dados, persiste no banco e retorna uma resposta em áudio. |
+| 📊 **Resumo financeiro** | Obter um consolidado dos gastos por categoria. |
 
-# Arquivos alterados/criados
+> 💡 **Diferencial:** A integração com **Spring AI** permite interação por voz, tornando o registro de gastos mais natural e acessível.
 
-Planilhas
-Arquivo	O que mudou
-domain/TransactionRepository.java	novo método findAll() no contrato do repositório
-infrastructure/persistence/repository/JpaTransactionRepository.java	implementação de findAll() sobre o JPA (abordagem didática com for explícito)
-application/output/FinancialSummaryOutput.java	(novo) saída do caso de uso
-application/GetFinancialSummaryUseCase.java	(novo) caso de uso + @Tool
-infrastructure/http/response/FinancialSummaryResponse.java	(novo) resposta HTTP
-infrastructure/http/TransactionController.java	novo endpoint GET /transactions/summary e registro da nova tool no ChatClient
-src/main/resources/prompts/system-message.st	instrução para o modelo usar a nova ferramenta
-src/test/.../GetFinancialSummaryUseCaseTest.java	(novo) teste unitário do caso de uso
-O diff completo está em financial-summary.patch, pronto para aplicar sobre um clone do repositório com git apply financial-summary.patch (rodado a partir da raiz do repo).
+---
 
-Por que essa abordagem
+## 🛠 Tecnologias utilizadas
 
-    Não bypassa a arquitetura: o cálculo do resumo vive num caso de uso da camada application, igual aos demais — nada de lógica de negócio no controller.
-    Reaproveitamento real: o mesmo caso de uso atende ao endpoint REST e à IA, exatamente como o projeto original já fazia com as outras duas operações.
-    Código propositalmente simples: a soma é feita com for e um Map para acumular os totais por categoria, sem streams ou expressões mais avançadas — para ficar fácil de acompanhar o raciocínio linha a linha.
+| Camada | Tecnologia | Versão | Função |
+|--------|-----------|--------|--------|
+| **Linguagem** | Java | 25 | Lógica de negócio e API |
+| **Framework** | Spring Boot | 4.0.5 | Estrutura da aplicação |
+| **Persistência** | Spring Data JPA + Hibernate | 7.2.7 | Acesso e mapeamento do banco |
+| **Banco de dados** | MySQL | 9.6 | Armazenamento das transações |
+| **IA / LLM** | Spring AI + OpenAI | — | Chat (GPT-4o-mini), Transcrição (Whisper), Voz (TTS) |
+| **Container** | Docker Compose | — | Orquestração do MySQL |
+| **Build** | Gradle | — | Gerenciamento de dependências |
+| **Utilitários** | Lombok | — | Redução de boilerplate |
 
-Tecnologias usadas
+---
 
-    Java 25 + Spring Boot
-    Spring AI (ChatClient, Tool Calling, TranscriptionModel, TextToSpeechModel)
-    OpenAI (gpt-4o-mini, whisper-1, gpt-4o-mini-tts) como provedor
-    Spring Data JPA + MySQL (via Docker Compose)
-    Lombok
-    JUnit 5, Mockito e AssertJ (testes)
+## 🏗 Arquitetura
 
-Como executar
-Pré-requisitos
+O projeto segue uma arquitetura em camadas com **Clean Architecture** simplificada:
 
-    Java 25 instalado
-    Docker e Docker Compose instalados
-    Chave de API da OpenAI (platform.openai.com)
+```
+┌─────────────────────────────────────────────┐
+│  🌐 HTTP (TransactionController)            │  ← REST API
+├─────────────────────────────────────────────┤
+│  ⚙️  Application (Use Cases)                 │  ← Regras de negócio
+├─────────────────────────────────────────────┤
+│  🧠 Domain (Entities, Enums, Repository)      │  ← Modelos puros
+├─────────────────────────────────────────────┤
+│  💾 Infrastructure (JPA, HTTP, AI)           │  ← Adaptadores
+└─────────────────────────────────────────────┘
+```
 
-Passo a passo
-bash
+**Fluxo de processamento de áudio:**
+```
+Usuário envia áudio MP3
+        ↓
+[Whisper] Transcreve para texto
+        ↓
+[GPT-4o-mini + Tools] Interpreta e chama a função de persistência
+        ↓
+[JPA + MySQL] Salva a transação
+        ↓
+[TTS] Gera resposta em áudio MP3
+        ↓
+Retorna áudio ao usuário
+```
 
-# 1. Clone o repositório da trilha
-git clone https://github.com/digitalinnovationone/dio-spring-boot-learning-track.git
+---
+
+## 🚀 Como executar
+
+### Pré-requisitos
+
+- [Git](https://git-scm.com/)
+- [Java 25](https://openjdk.org/projects/jdk/25/)
+- [Docker](https://www.docker.com/) (para o MySQL)
+- Chave de API da [OpenAI](https://platform.openai.com/api-keys)
+
+### Passo a passo
+
+#### 1. Clone o repositório
+
+```bash
+git clone https://github.com/john-richard13/dio-spring-boot-learning-track.git
 cd dio-spring-boot-learning-track/05-spring-ai
+```
 
-# 2. (Opcional) Aplique o patch com a melhoria, se estiver partindo do projeto base
-git apply financial-summary.patch
+#### 2. Configure a chave da OpenAI
 
-# 3. Configure a chave da OpenAI
-export OPENAI_API_KEY="sua_chave_aqui"
-# No Windows (PowerShell): $env:OPENAI_API_KEY="sua_chave_aqui"
-# No Windows (CMD): set OPENAI_API_KEY=sua_chave_aqui
+```bash
+export OPENAI_API_KEY="sua-chave-aqui"
+```
 
-# 4. Suba o banco de dados MySQL
-docker compose up -d
+> 💡 **Dica:** No GitHub Codespaces, você pode adicionar a chave em `Settings > Secrets and variables > Codespaces`.
 
-# 5. Execute a aplicação
+#### 3. Execute a aplicação
+
+```bash
 ./gradlew bootRun
+```
 
-O compose.yml já sobe o banco MySQL automaticamente junto com a aplicação (Docker Compose support do Spring Boot).
-Como testar o fluxo principal
-1. Registrar uma transação (REST, sem IA)
-bash
+O que acontece automaticamente:
+- ✅ O Spring Boot detecta o `compose.yml` e sobe o container MySQL na porta `3307`.
+- ✅ O banco `transaction` é criado com as credenciais definidas no Docker Compose.
+- ✅ As tabelas são geradas automaticamente pelo Hibernate (`ddl-auto=update`).
+- ✅ A API fica disponível em `http://localhost:8080`.
 
+> 🐳 **Nota:** O MySQL roda via Docker Compose. Não é necessário instalá-lo localmente.
+
+---
+
+## 📡 Endpoints da API
+
+### Base URL
+```
+http://localhost:8080
+```
+
+### 1. Criar uma transação
+
+```http
+POST /transactions
+Content-Type: application/json
+```
+
+**Request body:**
+```json
+{
+  "description": "Compra no mercado",
+  "amount": 15050,
+  "category": "GROCERIES"
+}
+```
+
+> ⚠️ O campo `amount` é em **centavos** (inteiro). Ex: R$ 150,50 = `15050`.
+
+**Response `201 Created`:**
+```json
+{
+  "id": "f85182cf-8bb0-46e5-9b62-7fb43bc2ccb3",
+  "category": "GROCERIES",
+  "description": "Compra no mercado",
+  "amount": 15050.0
+}
+```
+
+**Exemplo com `curl`:**
+```bash
 curl -X POST http://localhost:8080/transactions \
   -H "Content-Type: application/json" \
-  -d '{"description":"Supermercado","category":"GROCERIES","amount":5000}'
+  -d '{"description":"Compra no mercado","amount":15050,"category":"GROCERIES"}'
+```
 
-    O campo amount é enviado em centavos (5000 = R$ 50,00).
+---
 
-2. Consultar por categoria
-bash
+### 2. Listar transações por categoria
 
+```http
+GET /transactions/{category}
+```
+
+**Categorias disponíveis:** `GROCERIES` | `PHARMA` | `AUTO`
+
+**Exemplo com `curl`:**
+```bash
 curl http://localhost:8080/transactions/GROCERIES
+```
 
-3. Consultar o resumo financeiro (a melhoria)
-bash
+**Response `200 OK`:**
+```json
+[
+  {
+    "id": "f85182cf-8bb0-46e5-9b62-7fb43bc2ccb3",
+    "category": "GROCERIES",
+    "description": "Compra no mercado",
+    "amount": 15050.0
+  }
+]
+```
 
-curl http://localhost:8080/transactions/summary
+---
 
-Resposta esperada (exemplo com duas transações cadastradas):
-JSON
+### 3. Processar áudio com IA
 
-{
-  "total": 70.00,
-  "totalByCategory": { "GROCERIES": 50.00, "PHARMA": 20.00, "AUTO": 0.00 }
-}
+```http
+POST /transactions/ai
+Content-Type: multipart/form-data
+```
 
-4. Fluxo completo por voz (áudio → IA → tool → áudio)
-bash
+**Parâmetro:** `file` (arquivo de áudio `.mp3` ou `.wav`)
 
+**Exemplo com `curl`:**
+```bash
 curl -X POST http://localhost:8080/transactions/ai \
-  -F "file=@caminho/para/audio.m4a" \
+  -F "file=@/caminho/do/audio.mp3" \
   --output resposta.mp3
+```
 
-Grave um áudio perguntando, por exemplo, "quanto eu já gastei no total?" — o modelo deve identificar a intenção de consulta, chamar a ferramenta get-financial-summary e devolver a resposta falada em resposta.mp3.
-5. Testes automatizados
-bash
+**Comportamento:**
+1. Transcreve o áudio com **Whisper** (PT-BR).
+2. A IA interpreta o texto e extrai: descrição, valor e categoria.
+3. Persiste a transação no MySQL.
+4. Retorna um **áudio MP3** com a confirmação do registro.
 
+> 🎙️ **Prompt customizado:** O `application.properties` inclui um prompt específico para reconhecimento de gastos em português brasileiro.
+
+---
+
+## 🧪 Como testar o fluxo principal
+
+### Teste 1: Fluxo completo via JSON
+
+```bash
+# 1. Criar transação
+curl -X POST http://localhost:8080/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"description":"Remédio na farmácia","amount":4590,"category":"PHARMA"}'
+
+# 2. Criar outra transação
+curl -X POST http://localhost:8080/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"description":"Abastecimento","amount":20000,"category":"AUTO"}'
+
+# 3. Consultar todas as categorias
+curl http://localhost:8080/transactions/GROCERIES
+curl http://localhost:8080/transactions/PHARMA
+curl http://localhost:8080/transactions/AUTO
+```
+
+### Teste 2: Verificar persistência no banco
+
+```bash
+# Acesse o MySQL dentro do container
+docker exec -it 05-spring-ai-database-1 mysql -u app -papp -e "SELECT * FROM transaction.transaction;"
+```
+
+### Teste 3: Build limpo
+
+```bash
+./gradlew clean build
+```
+
+Deve retornar `BUILD SUCCESSFUL`.
+
+### Teste 4: Testes automatizados
+
+```bash
 ./gradlew test
+```
 
-Planilhas
-Teste	Tipo	Precisa de OpenAI?
-GetFinancialSummaryUseCaseTest	Unitário (Mockito)	❌ Não
-OpenAiChatClientIT	Integração	✅ Sim
-ToolCallingIT	Integração	✅ Sim
-O novo GetFinancialSummaryUseCaseTest roda sem precisar de chave da OpenAI (é um teste unitário com Mockito). Os testes de integração com a IA continuam exigindo OPENAI_API_KEY configurada.
-Para rodar apenas o teste unitário:
-bash
+---
 
-./gradlew test --tests "dio.budgeting.application.GetFinancialSummaryUseCaseTest"
+## 🚀 Melhorias implementadas
 
-O que aprendi
+Durante o desenvolvimento, foram aplicadas as seguintes melhorias:
 
-    Como o Tool Calling do Spring AI depende de reaproveitar casos de uso já existentes: a mesma classe anotada com @Tool pode ser injetada tanto num ChatClient quanto usada diretamente por um controller REST, sem duplicar regra de negócio.
-    Que o system-message.st funciona como uma "camada de decisão": pequenas instruções nele mudam quando o modelo escolhe usar cada ferramenta, sem tocar em código.
-    A importância de manter a lógica de cálculo na camada application e não no controller, para que a mesma regra sirva tanto para voz quanto para REST.
-    Como testar um caso de uso isoladamente com Mockito, sem precisar subir o contexto do Spring nem gastar chamadas de API paga durante o desenvolvimento.
-    Que código "simples" (como um for explícito em vez de stream) pode ser uma escolha válida quando o objetivo é didático — desde que a intenção seja documentada.
+| Melhoria | Descrição |
+|----------|-----------|
+| 🔧 **Configuração explícita do DataSource** | Adicionado `spring.datasource.*` no `application.properties` com fallback via variáveis de ambiente, garantindo funcionamento mesmo sem Docker Compose Support. |
+| 🐳 **Docker Compose nativo do Spring Boot 4** | O `compose.yml` é detectado automaticamente, eliminando a necessidade de `docker compose up` manual. |
+| 🧹 **Limpeza do repositório** | Remoção de arquivos temporários e configuração adequada do `.gitignore`. |
+| 🧪 **Testes de unidade** | Adicionado `GetFinancialSummaryUseCaseTest` para validar a lógica de resumo financeiro. |
+| 🎙️ **Prompt customizado para PT-BR** | O prompt de transcrição foi ajustado para reconhecer padrões de gastos em português brasileiro ("reais", "gastei", "comprei", etc.). |
+| 🔇 **Supressão de warnings** | Configuração `spring.jpa.open-in-view=false` para eliminar warnings do Hibernate. |
+
+---
+
+## 📚 O que aprendi
+
+> Este projeto foi desenvolvido durante o **Bootcamp Santander Backend Java** da [DIO](https://www.dio.me/).
+
+### Conceitos consolidados
+
+- **Spring Boot 4.0:** Uso do Docker Compose Support nativo, que simplifica drasticamente o desenvolvimento local com bancos de dados.
+- **Spring AI:** Integração com múltiplos modelos da OpenAI (Chat, Transcrição e TTS) usando uma abstração unificada.
+- **Pattern Tool Calling:** A IA não apenas responde textos — ela **invoca métodos Java** (`@Tool`) para persistir dados, criando uma interação bidirecional.
+- **Arquitetura em Camadas:** Separação clara entre Domain, Application e Infrastructure, facilitando testes e manutenção.
+- **Docker no dia a dia:** O `compose.yml` como parte do código-fonte, garantindo que qualquer pessoa rode o projeto com um único comando.
+
+### Desafios enfrentados
+
+| Desafio | Solução |
+|---------|---------|
+| `Failed to configure a DataSource` no Codespaces | Entendi que o Spring Boot 4 lê o `compose.yml` automaticamente, mas deixei a configuração explícita como fallback. |
+| Conflito de branches no Git | Aprendi a usar `git pull --no-rebase` para sincronizar mudanças do repositório remoto antes do push. |
+| Porta do MySQL | O `compose.yml` mapeia `3307:3306`, então a aplicação conecta em `localhost:3307` enquanto o container interno usa `3306`. |
+
+---
+
+## 📁 Estrutura de pastas
+
+```
+05-spring-ai/
+├── compose.yml                          # Docker Compose (MySQL 9.6)
+├── build.gradle                         # Dependências Gradle
+├── src/
+│   ├── main/
+│   │   ├── java/dio/budgeting/
+│   │   │   ├── application/             # Casos de uso
+│   │   │   │   ├── GetFinancialSummaryUseCase.java
+│   │   │   │   ├── ListTransactionsByCategoryUseCase.java
+│   │   │   │   ├── PersistTransactionUseCase.java
+│   │   │   │   ├── input/
+│   │   │   │   │   └── PersistTransactionInput.java
+│   │   │   │   └── output/
+│   │   │   │       ├── FinancialSummaryOutput.java
+│   │   │   │       └── TransactionOutput.java
+│   │   │   ├── domain/                  # Entidades e regras
+│   │   │   │   ├── Category.java
+│   │   │   │   ├── Transaction.java
+│   │   │   │   ├── TransactionId.java
+│   │   │   │   └── TransactionRepository.java
+│   │   │   └── infrastructure/          # Adaptadores externos
+│   │   │       └── http/
+│   │   │           ├── TransactionController.java
+│   │   │           ├── request/
+│   │   │           │   └── TransactionRequest.java
+│   │   │           └── response/
+│   │   │               ├── FinancialSummaryResponse.java
+│   │   │               └── TransactionResponse.java
+│   │   └── resources/
+│   │       ├── application.properties   # Configurações
+│   │       └── prompts/
+│   │           └── system-message.st    # Prompt da IA
+│   └── test/
+│       └── java/dio/budgeting/
+│           └── GetFinancialSummaryUseCaseTest.java
+└── README.md                            # Este arquivo
+```
+
+---
+
+<div align="center">
+
+Feito com 💚 durante o **Bootcamp Santander Backend Java** da [DIO](https://www.dio.me/)
+
+</div>
